@@ -1,50 +1,49 @@
 import React, { useState } from "react";
-import { Switch, Route, Link } from "react-router-dom";
+import { Switch, Route } from "react-router-dom";
 import Header from "./Header";
 import NotFound from "./NotFound";
-import LoadDecks from "./LoadDecks";
-import StudyDeck from "./StudyDeck";
-import CreateDeck from "./CreateDeck";
+import Homepage from "./Homepage";
+import CreateDeck from "./Deck-components/CreateDeck";
+import ViewDeck from "./Deck-components/ViewDeck";
+import EditDeck from "./Deck-components/EditDeck";
+import CardList from "./Card-components/CardList";
+import CreateCard from "./Card-components/CreateCard";
+import EditCard from "./Card-components/EditCard";
 
-function Layout() {
-  const [decks, setDecks] = useState([]);
-  const [cards, setCards] = useState([]);
+export default function Routing() {
+  const [deck, setDeck] = useState({ cards: [] });
 
   return (
-    <React.Fragment>
+    <>
       <Header />
       <div className="container">
         <Switch>
           <Route exact path="/">
-            <Link to="/decks/new" type="button" className="btn btn-secondary">
-              Create Deck
-            </Link>
-            <LoadDecks
-              decks={decks}
-              cards={cards}
-              setDecks={setDecks}
-              setCards={setCards}
-            />
+            <Homepage />
           </Route>
-
-          <Route path="/decks/new">
+          <Route exact path="/decks/new">
             <CreateDeck />
           </Route>
-          <Route path="/decks/:deckId">
-            <StudyDeck
-              decks={decks}
-              cards={cards}
-              setDecks={setDecks}
-              setCards={setCards}
-            />
+          <Route exact path="/decks/:deckId">
+            <ViewDeck deck={deck} setDeck={setDeck} />
+          </Route>
+          <Route exact path="/decks/:deckId/edit">
+            <EditDeck />
+          </Route>
+          <Route exact path="/decks/:deckId/study">
+            <CardList />
+          </Route>
+          <Route exact path="/decks/:deckId/cards/:cardId/edit">
+            <EditCard />
+          </Route>
+          <Route exact path="/decks/:deckId/cards/new">
+            <CreateCard />
           </Route>
           <Route>
             <NotFound />
           </Route>
         </Switch>
       </div>
-    </React.Fragment>
+    </>
   );
 }
-
-export default Layout;

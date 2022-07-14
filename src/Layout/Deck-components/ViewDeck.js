@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useRouteMatch, useHistory } from "react-router-dom";
-import { deleteDeck, readDeck } from "../utils/api";
+import { deleteCard, deleteDeck, readDeck } from "../../utils/api";
+import Breadcrumb from "../Breadcrumb";
 
-export default function ViewDeck({ deck, setDeck }) {
+export default function ViewDeck() {
+  const [currentDeck, setCurrentDeck] = useState({ cards: [] });
   const { url, params } = useRouteMatch();
   const history = useHistory();
 
@@ -10,50 +12,47 @@ export default function ViewDeck({ deck, setDeck }) {
     const abortController = new AbortController();
     async function fetchDeck() {
       try {
-        let fetchedDeck = await readDeck(params.deckId);
-        setDeck(fetchedDeck);
+        let fetchedDeck = await readDeck(params.deckId, abortController.signal);
+        setCurrentDeck(fetchedDeck);
       } catch (error) {
-        if (error.name === "AbortError") {
-          console.log(error.name);
-        } else {
-          throw error;
-        }
+        console.error(error);
       }
     }
     fetchDeck();
-    return () => {
-      abortController.abort();
-    };
-  }, [params.deckId, setDeck]); // add setDeck to dependencies
+    return () => abortController.abort();
+  }, [params.deckId]);
 
-  const handleDeleteDeck = () => {
+  const handleDeleteDeck = (event) => {
+    event.preventDefault();
     const deleteBox = window.confirm(
       "Delete deck? \n \n You will not be able to recover it."
     );
-    // if user hits "ok" on popup, code below deletes deck
+
     if (deleteBox) {
-      console.log("please Delete deck");
-      async function deleteDeckApiCall() {
+      async function deckDeleter() {
         try {
-          let newDeckList = await deleteDeck(params.deckId);
+          await deleteDeck(params.deckId);
           history.push("/");
-          console.log(newDeckList);
         } catch (error) {
-          if (error.name === "AbortError") {
-            console.log(error.name);
-          } else {
-            throw error;
-          }
+          console.error(error);
         }
       }
-
-      deleteDeckApiCall();
+      deckDeleter();
     }
   };
 
-  console.log("deck.cards", deck.cards);
+  const handleDeleteCard = async (cardId) => {
+    const deleteBox = window.confirm(
+      "Delete this card? \n \n You will not be able to recover it."
+    );
 
-  const cardList = deck.cards.map((card) => (
+    if (deleteBox) {
+      await deleteCard(cardId);
+      history.push(`/`);
+    }
+  };
+
+  const cardList = currentDeck.cards.map((card) => (
     <div key={card.id} className="card container">
       <li className="row">
         <div className="col-6">
@@ -73,7 +72,12 @@ export default function ViewDeck({ deck, setDeck }) {
             >
               Edit
             </Link>
-            <button className="btn btn-danger">Delete</button>
+            <button
+              className="btn btn-danger"
+              onClick={() => handleDeleteCard(card.id)}
+            >
+              Delete
+            </button>
           </div>
         </div>
       </li>
@@ -83,8 +87,8 @@ export default function ViewDeck({ deck, setDeck }) {
   const selectedDeck = (
     <div className="container column">
       <div className="column">
-        <h3> {deck.name} </h3>
-        <p> {deck.description}</p>
+        <h3> {currentDeck.name} </h3>
+        <p> {currentDeck.description}</p>
       </div>
       <div
         className="row"
@@ -126,41 +130,12 @@ export default function ViewDeck({ deck, setDeck }) {
     </div>
   );
 
-  const breadcrumb = (
-    <nav aria-label="breadcrumb">
-      <ol className="breadcrumb">
-        <li className="breadcrumb-item">
-          <Link to="/">Home</Link>
-        </li>
-        <li className="breadcrumb-item active" aria-current="page">
-          {deck.name}
-        </li>
-      </ol>
-    </nav>
-  );
-
   return (
-    <React.Fragment>
-      {/* <Switch>
-            <Route exact path={`${path}/edit`}>
-                <EditDeck />
-
-            </Route>
-            <Route path={`${path}/cards/new`}>
-
-                <CreateCard />
-
-            </Route>
-            <Route path={`${path}/cards/:cardId/edit`} >
-
-                <EditCard />
-            </Route>
-
-        </Switch> */}
-      {breadcrumb}
+    <>
+      <Breadcrumb middleText={currentDeck.name} />
       {selectedDeck}
       <h2>Cards</h2>
       <ul>{cardList}</ul>
-    </React.Fragment>
+    </>
   );
 }
